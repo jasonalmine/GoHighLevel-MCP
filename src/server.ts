@@ -34,6 +34,10 @@ import { GHLConfig } from './types/ghl-types';
 import { ProductsTools } from './tools/products-tools.js';
 import { PaymentsTools } from './tools/payments-tools.js';
 import { InvoicesTools } from './tools/invoices-tools.js';
+import { UserTools } from './tools/user-tools.js';
+import { FormTools } from './tools/form-tools.js';
+import { CampaignTools } from './tools/campaign-tools.js';
+import { TriggerLinkTools } from './tools/trigger-link-tools.js';
 
 // Load environment variables
 dotenv.config();
@@ -63,6 +67,10 @@ class GHLMCPServer {
   private productsTools: ProductsTools;
   private paymentsTools: PaymentsTools;
   private invoicesTools: InvoicesTools;
+  private userTools: UserTools;
+  private formTools: FormTools;
+  private campaignTools: CampaignTools;
+  private triggerLinkTools: TriggerLinkTools;
 
   constructor() {
     // Initialize MCP server with capabilities
@@ -101,6 +109,10 @@ class GHLMCPServer {
     this.productsTools = new ProductsTools(this.ghlClient);
     this.paymentsTools = new PaymentsTools(this.ghlClient);
     this.invoicesTools = new InvoicesTools(this.ghlClient);
+    this.userTools = new UserTools(this.ghlClient);
+    this.formTools = new FormTools(this.ghlClient);
+    this.campaignTools = new CampaignTools(this.ghlClient);
+    this.triggerLinkTools = new TriggerLinkTools(this.ghlClient);
 
     // Setup MCP handlers
     this.setupHandlers();
@@ -163,7 +175,11 @@ class GHLMCPServer {
         const productsToolDefinitions = this.productsTools.getTools();
         const paymentsToolDefinitions = this.paymentsTools.getTools();
         const invoicesToolDefinitions = this.invoicesTools.getTools();
-        
+        const userToolDefinitions = this.userTools.getToolDefinitions();
+        const formToolDefinitions = this.formTools.getToolDefinitions();
+        const campaignToolDefinitions = this.campaignTools.getToolDefinitions();
+        const triggerLinkToolDefinitions = this.triggerLinkTools.getToolDefinitions();
+
         const allTools = [
           ...contactToolDefinitions,
           ...conversationToolDefinitions,
@@ -183,9 +199,13 @@ class GHLMCPServer {
           ...storeToolDefinitions,
           ...productsToolDefinitions,
           ...paymentsToolDefinitions,
-          ...invoicesToolDefinitions
+          ...invoicesToolDefinitions,
+          ...userToolDefinitions,
+          ...formToolDefinitions,
+          ...campaignToolDefinitions,
+          ...triggerLinkToolDefinitions
         ];
-        
+
         process.stderr.write(`[GHL MCP] Registered ${allTools.length} tools total:\n`);
         process.stderr.write(`[GHL MCP] - ${contactToolDefinitions.length} contact tools\n`);
         process.stderr.write(`[GHL MCP] - ${conversationToolDefinitions.length} conversation tools\n`);
@@ -206,7 +226,11 @@ class GHLMCPServer {
         process.stderr.write(`[GHL MCP] - ${productsToolDefinitions.length} products tools\n`);
         process.stderr.write(`[GHL MCP] - ${paymentsToolDefinitions.length} payments tools\n`);
         process.stderr.write(`[GHL MCP] - ${invoicesToolDefinitions.length} invoices tools\n`);
-        
+        process.stderr.write(`[GHL MCP] - ${userToolDefinitions.length} user tools\n`);
+        process.stderr.write(`[GHL MCP] - ${formToolDefinitions.length} form tools\n`);
+        process.stderr.write(`[GHL MCP] - ${campaignToolDefinitions.length} campaign tools\n`);
+        process.stderr.write(`[GHL MCP] - ${triggerLinkToolDefinitions.length} trigger link tools\n`);
+
         return {
           tools: allTools
         };
@@ -268,6 +292,14 @@ class GHLMCPServer {
           result = await this.paymentsTools.handleToolCall(name, args || {});
         } else if (this.isInvoicesTool(name)) {
           result = await this.invoicesTools.handleToolCall(name, args || {});
+        } else if (this.isUserTool(name)) {
+          result = await this.userTools.executeTool(name, args || {});
+        } else if (this.isFormTool(name)) {
+          result = await this.formTools.executeTool(name, args || {});
+        } else if (this.isCampaignTool(name)) {
+          result = await this.campaignTools.executeTool(name, args || {});
+        } else if (this.isTriggerLinkTool(name)) {
+          result = await this.triggerLinkTools.executeTool(name, args || {});
         } else {
           throw new Error(`Unknown tool: ${name}`);
         }
@@ -596,6 +628,43 @@ class GHLMCPServer {
       'list_estimate_templates', 'create_estimate_template', 'update_estimate_template', 'delete_estimate_template', 'preview_estimate_template'
     ];
     return invoicesToolNames.includes(toolName);
+  }
+
+  /**
+   * Check if tool name belongs to user tools
+   */
+  private isUserTool(toolName: string): boolean {
+    const userToolNames = [
+      'get_users_by_location', 'get_user', 'search_users', 'create_user', 'update_user', 'delete_user'
+    ];
+    return userToolNames.includes(toolName);
+  }
+
+  /**
+   * Check if tool name belongs to form tools
+   */
+  private isFormTool(toolName: string): boolean {
+    const formToolNames = ['get_forms', 'get_form_submissions'];
+    return formToolNames.includes(toolName);
+  }
+
+  /**
+   * Check if tool name belongs to campaign tools
+   */
+  private isCampaignTool(toolName: string): boolean {
+    const campaignToolNames = ['get_campaigns'];
+    return campaignToolNames.includes(toolName);
+  }
+
+  /**
+   * Check if tool name belongs to trigger link tools
+   */
+  private isTriggerLinkTool(toolName: string): boolean {
+    const triggerLinkToolNames = [
+      'get_trigger_links', 'search_trigger_links', 'get_trigger_link',
+      'create_trigger_link', 'update_trigger_link', 'delete_trigger_link'
+    ];
+    return triggerLinkToolNames.includes(toolName);
   }
 
 

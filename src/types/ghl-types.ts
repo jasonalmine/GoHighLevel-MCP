@@ -6686,3 +6686,180 @@ export interface CreateInvoiceResponseDto extends DefaultInvoiceResponseDto {}
 export interface UpdateInvoiceResponseDto extends DefaultInvoiceResponseDto {}
 export interface DeleteInvoiceResponseDto extends DefaultInvoiceResponseDto {}
 export interface VoidInvoiceResponseDto extends DefaultInvoiceResponseDto {}
+
+/**
+ * ============================================================
+ * USERS API
+ * ============================================================
+ */
+export interface GHLUser {
+  id: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  extension?: string;
+  type?: string;
+  role?: string;
+  locationIds?: string[];
+  permissions?: Record<string, boolean>;
+  roles?: Record<string, any>;
+  [key: string]: any;
+}
+
+export interface GHLCreateUserRequest {
+  companyId?: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password?: string;
+  phone?: string;
+  type?: string; // 'account' | 'agency'
+  role?: string; // 'admin' | 'user'
+  locationIds?: string[];
+  permissions?: Record<string, boolean>;
+  scopes?: string[];
+  [key: string]: any;
+}
+
+export interface GHLSearchUsersResponse {
+  users: GHLUser[];
+  [key: string]: any;
+}
+
+export interface MCPGetUsersByLocationParams {
+  locationId?: string;
+}
+export interface MCPGetUserParams {
+  userId: string;
+}
+export interface MCPCreateUserParams extends GHLCreateUserRequest {}
+export interface MCPUpdateUserParams {
+  userId: string;
+  [key: string]: any;
+}
+export interface MCPDeleteUserParams {
+  userId: string;
+}
+export interface MCPSearchUsersParams {
+  companyId?: string;
+  query?: string;
+  skip?: number;
+  limit?: number;
+  locationId?: string;
+  type?: string;
+  role?: string;
+  sort?: string;
+  sortDirection?: string;
+}
+
+/**
+ * ============================================================
+ * FORMS API
+ * ============================================================
+ */
+export interface GHLForm {
+  id: string;
+  name?: string;
+  locationId?: string;
+  [key: string]: any;
+}
+
+export interface GHLGetFormsResponse {
+  forms: GHLForm[];
+  total?: number;
+  [key: string]: any;
+}
+
+export interface GHLFormSubmission {
+  id?: string;
+  contactId?: string;
+  formId?: string;
+  createdAt?: string;
+  [key: string]: any;
+}
+
+export interface GHLGetFormSubmissionsResponse {
+  submissions: GHLFormSubmission[];
+  meta?: Record<string, any>;
+  [key: string]: any;
+}
+
+export interface MCPGetFormsParams {
+  locationId?: string;
+  limit?: number;
+  skip?: number;
+  type?: string;
+}
+
+export interface MCPGetFormSubmissionsParams {
+  locationId?: string;
+  formId?: string;
+  q?: string;
+  page?: number;
+  limit?: number;
+  startAt?: string;
+  endAt?: string;
+}
+
+/**
+ * ============================================================
+ * CAMPAIGNS API
+ * ============================================================
+ */
+export interface GHLGetCampaignsResponse {
+  campaigns: GHLCampaign[];
+  [key: string]: any;
+}
+
+export interface MCPGetCampaignsParams {
+  locationId?: string;
+  status?: string;
+}
+
+/**
+ * ============================================================
+ * TRIGGER LINKS API
+ * ============================================================
+ */
+export interface GHLTriggerLink {
+  id: string;
+  name?: string;
+  redirectTo?: string;
+  locationId?: string;
+  fieldKey?: string;
+  [key: string]: any;
+}
+
+export interface GHLGetTriggerLinksResponse {
+  links: GHLTriggerLink[];
+  [key: string]: any;
+}
+
+export interface MCPGetTriggerLinksParams {
+  locationId?: string;
+}
+export interface MCPSearchTriggerLinksParams {
+  locationId?: string;
+  query?: string;
+  skip?: number;
+  limit?: number;
+}
+export interface MCPGetTriggerLinkParams {
+  linkId: string;
+  locationId?: string;
+}
+export interface MCPCreateTriggerLinkParams {
+  locationId?: string;
+  name: string;
+  redirectTo: string;
+}
+export interface MCPUpdateTriggerLinkParams {
+  linkId: string;
+  name?: string;
+  redirectTo?: string;
+}
+export interface MCPDeleteTriggerLinkParams {
+  linkId: string;
+}

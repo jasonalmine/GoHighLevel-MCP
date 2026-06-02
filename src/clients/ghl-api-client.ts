@@ -3,7 +3,7 @@
  * Implements exact API endpoints from OpenAPI specifications v2021-07-28 (Contacts) and v2021-04-15 (Conversations)
  */
 
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import {
   GHLConfig,
   GHLContact,
@@ -380,7 +380,22 @@ import {
   CreateInvoiceDto,
   CreateInvoiceResponseDto,
   ListInvoicesResponseDto,
-  AltDto
+  AltDto,
+  GHLUser,
+  GHLCreateUserRequest,
+  GHLSearchUsersResponse,
+  MCPSearchUsersParams,
+  GHLGetFormsResponse,
+  GHLGetFormSubmissionsResponse,
+  MCPGetFormsParams,
+  MCPGetFormSubmissionsParams,
+  GHLGetCampaignsResponse,
+  MCPGetCampaignsParams,
+  GHLTriggerLink,
+  GHLGetTriggerLinksResponse,
+  MCPSearchTriggerLinksParams,
+  MCPCreateTriggerLinkParams,
+  MCPUpdateTriggerLinkParams
 } from '../types/ghl-types.js';
 
 /**
@@ -390,9 +405,14 @@ import {
 export class GHLApiClient {
   private axiosInstance: AxiosInstance;
   private config: GHLConfig;
+  private readonly maxRetries: number;
+  private readonly retryBaseDelayMs: number;
 
   constructor(config: GHLConfig) {
     this.config = config;
+    // Rate-limit retry tuning (overridable via env)
+    this.maxRetries = parseInt(process.env.GHL_MAX_RETRIES || '3', 10);
+    this.retryBaseDelayMs = parseInt(process.env.GHL_RETRY_BASE_DELAY_MS || '1000', 10);
     
     // Create axios instance with base configuration
     this.axiosInstance = axios.create({
@@ -424,7 +444,13 @@ export class GHLApiClient {
         process.stderr.write(`[GHL API] Response ${response.status}: ${response.config.url}\n`);
         return response;
       },
-      (error: AxiosError<GHLErrorResponse>) => {
+      async (error: AxiosError<GHLErrorResponse>) => {
+        // Retry on rate limit (429), honoring Retry-After, with exponential backoff
+        const retried = await this.maybeRetry(error);
+        if (retried) {
+          return retried;
+        }
+
         console.error('[GHL API] Response error:', {
           status: error.response?.status,
           message: error.response?.data?.message,
@@ -433,6 +459,41 @@ export class GHLApiClient {
         return Promise.reject(this.handleApiError(error));
       }
     );
+  }
+
+  /**
+   * Retry a rate-limited (429) request with backoff. Returns the retried
+   * response promise, or null if the request should not be retried.
+   */
+  private async maybeRetry(
+    error: AxiosError<GHLErrorResponse>
+  ): Promise<AxiosResponse | null> {
+    const config = error.config as
+      | (InternalAxiosRequestConfig & { _retryCount?: number })
+      | undefined;
+
+    if (!config || error.response?.status !== 429) {
+      return null;
+    }
+
+    config._retryCount = config._retryCount ?? 0;
+    if (config._retryCount >= this.maxRetries) {
+      return null;
+    }
+    config._retryCount += 1;
+
+    // Prefer the server's Retry-After (seconds), else exponential backoff capped at 20s
+    const retryAfter = Number(error.response.headers?.['retry-after']);
+    const backoff = this.retryBaseDelayMs * 2 ** (config._retryCount - 1);
+    const delayMs = Number.isFinite(retryAfter) && retryAfter > 0
+      ? retryAfter * 1000
+      : Math.min(backoff, 20000);
+
+    process.stderr.write(
+      `[GHL API] 429 rate limited on ${config.url}, retry ${config._retryCount}/${this.maxRetries} in ${delayMs}ms\n`
+    );
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    return this.axiosInstance(config);
   }
 
   /**
@@ -6820,6 +6881,244 @@ export class GHLApiClient {
         { params: queryParams }
       );
 
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * ============================================================
+   * USERS API METHODS
+   * ============================================================
+   */
+
+  /** GET /users/?locationId={id} - list users for a location */
+  async getUsersByLocation(locationId?: string): Promise<GHLApiResponse<GHLSearchUsersResponse>> {
+    try {
+      const response: AxiosResponse<GHLSearchUsersResponse> = await this.axiosInstance.get('/users/', {
+        params: { locationId: locationId || this.config.locationId }
+      });
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /** GET /users/{userId} */
+  async getUser(userId: string): Promise<GHLApiResponse<GHLUser>> {
+    try {
+      const response: AxiosResponse<GHLUser> = await this.axiosInstance.get(`/users/${userId}`);
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /** POST /users/ - create a user */
+  async createUser(userData: GHLCreateUserRequest): Promise<GHLApiResponse<GHLUser>> {
+    try {
+      const response: AxiosResponse<GHLUser> = await this.axiosInstance.post('/users/', userData);
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /** PUT /users/{userId} - update a user */
+  async updateUser(userId: string, updates: Record<string, any>): Promise<GHLApiResponse<GHLUser>> {
+    try {
+      const response: AxiosResponse<GHLUser> = await this.axiosInstance.put(`/users/${userId}`, updates);
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /** DELETE /users/{userId} */
+  async deleteUser(userId: string): Promise<GHLApiResponse<{ succeded?: boolean; message?: string }>> {
+    try {
+      const response: AxiosResponse<{ succeded?: boolean; message?: string }> = await this.axiosInstance.delete(`/users/${userId}`);
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /** GET /users/search - search users (requires companyId) */
+  async searchUsers(params: MCPSearchUsersParams): Promise<GHLApiResponse<GHLSearchUsersResponse>> {
+    try {
+      const queryParams = {
+        ...(params.companyId && { companyId: params.companyId }),
+        ...(params.locationId && { locationId: params.locationId }),
+        ...(params.query && { query: params.query }),
+        ...(params.skip !== undefined && { skip: params.skip }),
+        ...(params.limit !== undefined && { limit: params.limit }),
+        ...(params.type && { type: params.type }),
+        ...(params.role && { role: params.role }),
+        ...(params.sort && { sort: params.sort }),
+        ...(params.sortDirection && { sortDirection: params.sortDirection })
+      };
+      const response: AxiosResponse<GHLSearchUsersResponse> = await this.axiosInstance.get('/users/search', {
+        params: queryParams
+      });
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * ============================================================
+   * FORMS API METHODS
+   * ============================================================
+   */
+
+  /** GET /forms/?locationId={id} - list forms */
+  async getForms(params: MCPGetFormsParams): Promise<GHLApiResponse<GHLGetFormsResponse>> {
+    try {
+      const queryParams = {
+        locationId: params.locationId || this.config.locationId,
+        ...(params.limit !== undefined && { limit: params.limit }),
+        ...(params.skip !== undefined && { skip: params.skip }),
+        ...(params.type && { type: params.type })
+      };
+      const response: AxiosResponse<GHLGetFormsResponse> = await this.axiosInstance.get('/forms/', {
+        params: queryParams
+      });
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /** GET /forms/submissions - list form submissions */
+  async getFormSubmissions(params: MCPGetFormSubmissionsParams): Promise<GHLApiResponse<GHLGetFormSubmissionsResponse>> {
+    try {
+      const queryParams = {
+        locationId: params.locationId || this.config.locationId,
+        ...(params.formId && { formId: params.formId }),
+        ...(params.q && { q: params.q }),
+        ...(params.page !== undefined && { page: params.page }),
+        ...(params.limit !== undefined && { limit: params.limit }),
+        ...(params.startAt && { startAt: params.startAt }),
+        ...(params.endAt && { endAt: params.endAt })
+      };
+      const response: AxiosResponse<GHLGetFormSubmissionsResponse> = await this.axiosInstance.get('/forms/submissions', {
+        params: queryParams
+      });
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * ============================================================
+   * CAMPAIGNS API METHODS
+   * ============================================================
+   */
+
+  /** GET /campaigns/?locationId={id} - list campaigns */
+  async getCampaigns(params: MCPGetCampaignsParams): Promise<GHLApiResponse<GHLGetCampaignsResponse>> {
+    try {
+      const queryParams = {
+        locationId: params.locationId || this.config.locationId,
+        ...(params.status && { status: params.status })
+      };
+      const response: AxiosResponse<GHLGetCampaignsResponse> = await this.axiosInstance.get('/campaigns/', {
+        params: queryParams
+      });
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * ============================================================
+   * TRIGGER LINKS API METHODS
+   * ============================================================
+   */
+
+  /** GET /links/?locationId={id} - list trigger links */
+  async getTriggerLinks(locationId?: string): Promise<GHLApiResponse<GHLGetTriggerLinksResponse>> {
+    try {
+      const response: AxiosResponse<GHLGetTriggerLinksResponse> = await this.axiosInstance.get('/links/', {
+        params: { locationId: locationId || this.config.locationId }
+      });
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /** GET /links/search - search trigger links */
+  async searchTriggerLinks(params: MCPSearchTriggerLinksParams): Promise<GHLApiResponse<GHLGetTriggerLinksResponse>> {
+    try {
+      const queryParams = {
+        locationId: params.locationId || this.config.locationId,
+        ...(params.query && { query: params.query }),
+        ...(params.skip !== undefined && { skip: params.skip }),
+        ...(params.limit !== undefined && { limit: params.limit })
+      };
+      const response: AxiosResponse<GHLGetTriggerLinksResponse> = await this.axiosInstance.get('/links/search', {
+        params: queryParams
+      });
+      return this.wrapResponse(response.data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /** GET /links/id/{linkId} - get a single trigger link */
+  async getTriggerLink(linkId: string, locationId?: string): Promise<GHLApiResponse<GHLTriggerLink>> {
+    try {
+      const response: AxiosResponse<{ link: GHLTriggerLink } | GHLTriggerLink> = await this.axiosInstance.get(`/links/id/${linkId}`, {
+        params: { locationId: locationId || this.config.locationId }
+      });
+      const data = (response.data as { link?: GHLTriggerLink }).link ?? (response.data as GHLTriggerLink);
+      return this.wrapResponse(data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /** POST /links/ - create a trigger link */
+  async createTriggerLink(params: MCPCreateTriggerLinkParams): Promise<GHLApiResponse<GHLTriggerLink>> {
+    try {
+      const payload = {
+        locationId: params.locationId || this.config.locationId,
+        name: params.name,
+        redirectTo: params.redirectTo
+      };
+      const response: AxiosResponse<{ link: GHLTriggerLink } | GHLTriggerLink> = await this.axiosInstance.post('/links/', payload);
+      const data = (response.data as { link?: GHLTriggerLink }).link ?? (response.data as GHLTriggerLink);
+      return this.wrapResponse(data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /** PUT /links/{linkId} - update a trigger link */
+  async updateTriggerLink(params: MCPUpdateTriggerLinkParams): Promise<GHLApiResponse<GHLTriggerLink>> {
+    try {
+      const payload = {
+        ...(params.name !== undefined && { name: params.name }),
+        ...(params.redirectTo !== undefined && { redirectTo: params.redirectTo })
+      };
+      const response: AxiosResponse<{ link: GHLTriggerLink } | GHLTriggerLink> = await this.axiosInstance.put(`/links/${params.linkId}`, payload);
+      const data = (response.data as { link?: GHLTriggerLink }).link ?? (response.data as GHLTriggerLink);
+      return this.wrapResponse(data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /** DELETE /links/{linkId} - delete a trigger link */
+  async deleteTriggerLink(linkId: string): Promise<GHLApiResponse<{ succeded?: boolean; message?: string }>> {
+    try {
+      const response: AxiosResponse<{ succeded?: boolean; message?: string }> = await this.axiosInstance.delete(`/links/${linkId}`);
       return this.wrapResponse(response.data);
     } catch (error) {
       throw error;

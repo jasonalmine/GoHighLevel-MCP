@@ -83,7 +83,7 @@ This project was a 'time-taker' but I felt it was important. Feel free to donate
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/mastanley13/GoHighLevel-MCP)
 [![Donate to the Project](https://img.shields.io/badge/Donate_to_the_Project-💝_Support_Development-ff69b4?style=for-the-badge&logo=stripe&logoColor=white)](https://buy.stripe.com/28E14o1hT7JAfstfvqdZ60y)
 
-> **🔥 Transform Claude Desktop into a complete GoHighLevel CRM powerhouse with 269+ powerful tools across 19+ categories**
+> **🔥 Transform Claude Desktop into a complete GoHighLevel CRM powerhouse with 268 powerful tools across 23 categories**
 
 ## 🎯 What This Does
 
@@ -91,9 +91,9 @@ This comprehensive MCP (Model Context Protocol) server connects Claude Desktop d
 
 - **👥 Complete Contact Management**: 31 tools for contacts, tasks, notes, and relationships
 - **💬 Advanced Messaging**: 20 tools for SMS, email, conversations, and call recordings  
-- **🏢 Business Operations**: Location management, custom objects, workflows, and surveys
+- **🏢 Business Operations**: Location management, custom objects, workflows, surveys, forms, and user management
 - **💰 Sales & Revenue**: Opportunities, payments, invoices, estimates, and billing automation
-- **📱 Marketing Automation**: Social media, email campaigns, blog management, and media library
+- **📱 Marketing Automation**: Social media, email campaigns, blog management, campaigns, trigger links, and media library
 - **🛒 E-commerce**: Store management, products, inventory, shipping, and order fulfillment
 
 ## ⚡ Quick Deploy Options
@@ -121,7 +121,7 @@ This comprehensive MCP (Model Context Protocol) server connects Claude Desktop d
 - ✅ Auto-deploy from GitHub
 - ✅ Built-in SSL
 
-## 🌟 Complete Tool Catalog (269 Tools)
+## 🌟 Complete Tool Catalog (268 Tools)
 
 ### 🎯 Contact Management (31 Tools)
 **Core Operations:**
@@ -169,7 +169,7 @@ This comprehensive MCP (Model Context Protocol) server connects Claude Desktop d
 - `upsert_opportunity` - Smart pipeline management
 - `add_opportunity_followers`, `remove_opportunity_followers`
 
-### 🗓️ Calendar & Appointments (14 Tools)
+### 🗓️ Calendar & Appointments (39 Tools)
 **Calendar Management:**
 - `get_calendar_groups`, `get_calendars`, `create_calendar`
 - `update_calendar`, `delete_calendar`
@@ -298,7 +298,7 @@ This comprehensive MCP (Model Context Protocol) server connects Claude Desktop d
 - `create_custom_provider_integration`, `delete_custom_provider_integration`
 - `get_custom_provider_config`, `create_custom_provider_config`
 
-### 🧾 Invoices & Billing (39 Tools)
+### 🧾 Invoices & Billing (18 Tools)
 **Invoice Templates:**
 - `create_invoice_template`, `list_invoice_templates`, `get_invoice_template`
 - `update_invoice_template`, `delete_invoice_template`
@@ -321,6 +321,21 @@ This comprehensive MCP (Model Context Protocol) server connects Claude Desktop d
 **Estimate Templates:**
 - `list_estimate_templates`, `create_estimate_template`, `update_estimate_template`
 - `delete_estimate_template`, `preview_estimate_template`
+
+### 👤 User Management (6 Tools)
+- `get_users_by_location`, `get_user`, `search_users`
+- `create_user`, `update_user`, `delete_user`
+- _Note: create/update/delete require an agency-level token with `users.write` scope._
+
+### 📝 Forms (2 Tools)
+- `get_forms`, `get_form_submissions`
+
+### 📣 Campaigns (1 Tool)
+- `get_campaigns` (list campaigns to resolve a `campaignId` for contact enrollment)
+
+### 🔗 Trigger Links (6 Tools)
+- `get_trigger_links`, `search_trigger_links`, `get_trigger_link`
+- `create_trigger_link`, `update_trigger_link`, `delete_trigger_link`
 
 ## 🎮 Claude Desktop Usage Examples
 
@@ -397,6 +412,10 @@ NODE_ENV=production
 PORT=8000
 CORS_ORIGINS=*
 LOG_LEVEL=info
+
+# Optional: Rate-limit retry tuning (sane defaults if omitted)
+GHL_MAX_RETRIES=3              # Retries on HTTP 429 before giving up
+GHL_RETRY_BASE_DELAY_MS=1000   # Base backoff delay; doubles each retry, capped at 20s
 ```
 
 ### Available Scripts
@@ -599,7 +618,7 @@ ghl-mcp-server/
 
 ### API Rate Limiting
 - GoHighLevel API has rate limits
-- Implement exponential backoff
+- **Built in:** the API client automatically retries on HTTP 429, honoring the `Retry-After` header and falling back to exponential backoff (capped at 20s). Tune with `GHL_MAX_RETRIES` / `GHL_RETRY_BASE_DELAY_MS`.
 - Cache frequently requested data
 - Use batch operations when available
 
