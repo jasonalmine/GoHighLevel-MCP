@@ -17,12 +17,12 @@ describe('ConversationTools', () => {
   });
 
   describe('getToolDefinitions', () => {
-    it('should return 7 conversation tool definitions', () => {
+    it('should return all conversation tool definitions', () => {
       const tools = conversationTools.getToolDefinitions();
-      expect(tools).toHaveLength(7);
-      
+      expect(tools).toHaveLength(20);
+
       const toolNames = tools.map(tool => tool.name);
-      expect(toolNames).toEqual([
+      expect(toolNames).toEqual(expect.arrayContaining([
         'send_sms',
         'send_email',
         'search_conversations',
@@ -30,7 +30,7 @@ describe('ConversationTools', () => {
         'create_conversation',
         'update_conversation',
         'get_recent_messages'
-      ]);
+      ]));
     });
 
     it('should have proper schema definitions for all tools', () => {

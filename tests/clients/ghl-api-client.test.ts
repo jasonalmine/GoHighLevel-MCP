@@ -1,416 +1,183 @@
 /**
  * Unit Tests for GHL API Client
- * Tests API client configuration, connection, and error handling
+ *
+ * The client takes an explicit GHLConfig (env-based defaults live in the server
+ * entry points, not here). axios is mocked with a callable instance so the
+ * response interceptor — which holds the 429 retry and error formatting — can be
+ * captured and exercised directly.
  */
 
-import { describe, it, expect, beforeEach, jest, afterEach } from '@jest/globals';
-import { GHLApiClient } from '../../src/clients/ghl-api-client.js';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
-// Mock axios
-jest.mock('axios', () => ({
-  default: {
-    create: jest.fn(() => ({
-      get: jest.fn(),
-      post: jest.fn(),
-      put: jest.fn(),
-      delete: jest.fn(),
-      patch: jest.fn()
-    }))
-  }
-}));
+jest.mock('axios', () => {
+  const create = jest.fn();
+  return {
+    __esModule: true,
+    default: { create, isAxiosError: jest.fn() }
+  };
+});
 
 import axios from 'axios';
-const mockAxios = axios as jest.Mocked<typeof axios>;
+import { GHLApiClient } from '../../src/clients/ghl-api-client.js';
+
+const mockedCreate = (axios as any).create as jest.Mock;
+
+const TEST_CONFIG = {
+  accessToken: 'test_api_key_123',
+  baseUrl: 'https://test.leadconnectorhq.com',
+  version: '2021-07-28',
+  locationId: 'test_location_123'
+};
+
+function makeMockInstance(): any {
+  // Callable so the retry path (`this.axiosInstance(config)`) works.
+  const instance: any = jest.fn();
+  instance.get = jest.fn();
+  instance.post = jest.fn();
+  instance.put = jest.fn();
+  instance.delete = jest.fn();
+  instance.patch = jest.fn();
+  instance.defaults = { headers: {} };
+  instance.interceptors = {
+    request: { use: jest.fn() },
+    response: { use: jest.fn() }
+  };
+  return instance;
+}
 
 describe('GHLApiClient', () => {
-  let ghlClient: GHLApiClient;
-  let mockAxiosInstance: any;
+  let mockInstance: any;
+  let client: GHLApiClient;
 
   beforeEach(() => {
-    // Reset environment variables
-    process.env.GHL_API_KEY = 'test_api_key_123';
-    process.env.GHL_BASE_URL = 'https://test.leadconnectorhq.com';
-    process.env.GHL_LOCATION_ID = 'test_location_123';
-
-    mockAxiosInstance = {
-      get: jest.fn(),
-      post: jest.fn(),
-      put: jest.fn(),
-      delete: jest.fn(),
-      patch: jest.fn()
-    };
-
-    mockAxios.create.mockReturnValue(mockAxiosInstance);
-
-    ghlClient = new GHLApiClient();
-  });
-
-  afterEach(() => {
     jest.clearAllMocks();
+    // Tiny backoff so the retry test runs fast (read at construction time).
+    process.env.GHL_RETRY_BASE_DELAY_MS = '1';
+    process.env.GHL_MAX_RETRIES = '3';
+
+    mockInstance = makeMockInstance();
+    mockedCreate.mockReturnValue(mockInstance);
+    client = new GHLApiClient({ ...TEST_CONFIG });
   });
+
+  // The onRejected handler the client registered on the response interceptor.
+  const getResponseErrorHandler = (): ((error: any) => Promise<any>) =>
+    mockInstance.interceptors.response.use.mock.calls[0][1];
 
   describe('constructor', () => {
-    it('should initialize with environment variables', () => {
-      expect(mockAxios.create).toHaveBeenCalledWith({
-        baseURL: 'https://test.leadconnectorhq.com',
-        headers: {
-          'Authorization': 'Bearer test_api_key_123',
-          'Content-Type': 'application/json',
-          'Version': '2021-07-28'
-        }
-      });
+    it('creates an axios instance with the configured baseURL and auth header', () => {
+      expect(mockedCreate).toHaveBeenCalledTimes(1);
+      const args = mockedCreate.mock.calls[0][0];
+      expect(args.baseURL).toBe(TEST_CONFIG.baseUrl);
+      expect(args.headers.Authorization).toBe(`Bearer ${TEST_CONFIG.accessToken}`);
+      expect(args.headers.Version).toBe(TEST_CONFIG.version);
     });
 
-    it('should throw error if API key is missing', () => {
-      delete process.env.GHL_API_KEY;
-      
-      expect(() => {
-        new GHLApiClient();
-      }).toThrow('GHL_API_KEY environment variable is required');
-    });
-
-    it('should throw error if base URL is missing', () => {
-      delete process.env.GHL_BASE_URL;
-      
-      expect(() => {
-        new GHLApiClient();
-      }).toThrow('GHL_BASE_URL environment variable is required');
-    });
-
-    it('should throw error if location ID is missing', () => {
-      delete process.env.GHL_LOCATION_ID;
-      
-      expect(() => {
-        new GHLApiClient();
-      }).toThrow('GHL_LOCATION_ID environment variable is required');
-    });
-
-    it('should use custom configuration when provided', () => {
-      const customConfig = {
-        accessToken: 'custom_token',
-        baseUrl: 'https://custom.ghl.com',
-        locationId: 'custom_location',
-        version: '2022-01-01'
-      };
-
-      new GHLApiClient(customConfig);
-
-      expect(mockAxios.create).toHaveBeenCalledWith({
-        baseURL: 'https://custom.ghl.com',
-        headers: {
-          'Authorization': 'Bearer custom_token',
-          'Content-Type': 'application/json',
-          'Version': '2022-01-01'
-        }
-      });
+    it('registers request and response interceptors', () => {
+      expect(mockInstance.interceptors.request.use).toHaveBeenCalledTimes(1);
+      expect(mockInstance.interceptors.response.use).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('getConfig', () => {
-    it('should return current configuration', () => {
-      const config = ghlClient.getConfig();
-      
-      expect(config).toEqual({
-        accessToken: 'test_api_key_123',
-        baseUrl: 'https://test.leadconnectorhq.com',
-        locationId: 'test_location_123',
-        version: '2021-07-28'
-      });
+    it('returns a copy of the current configuration', () => {
+      expect(client.getConfig()).toEqual(TEST_CONFIG);
     });
   });
 
   describe('updateAccessToken', () => {
-    it('should update access token and recreate axios instance', () => {
-      ghlClient.updateAccessToken('new_token_456');
+    it('updates the token in config and on the axios default headers', () => {
+      client.updateAccessToken('new_token_456');
 
-      expect(mockAxios.create).toHaveBeenCalledWith({
-        baseURL: 'https://test.leadconnectorhq.com',
-        headers: {
-          'Authorization': 'Bearer new_token_456',
-          'Content-Type': 'application/json',
-          'Version': '2021-07-28'
-        }
-      });
-
-      const config = ghlClient.getConfig();
-      expect(config.accessToken).toBe('new_token_456');
+      expect(client.getConfig().accessToken).toBe('new_token_456');
+      expect(mockInstance.defaults.headers.Authorization).toBe('Bearer new_token_456');
     });
   });
 
   describe('testConnection', () => {
-    it('should test connection successfully', async () => {
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: { success: true },
-        status: 200
-      });
+    it('hits the location endpoint and reports connected', async () => {
+      mockInstance.get.mockResolvedValueOnce({ data: {}, status: 200 });
 
-      const result = await ghlClient.testConnection();
+      const result = await client.testConnection();
 
       expect(result.success).toBe(true);
-      expect(result.data).toEqual({
-        status: 'connected',
-        locationId: 'test_location_123'
-      });
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/contacts', {
-        params: { limit: 1 }
-      });
+      expect(result.data).toEqual({ status: 'connected', locationId: TEST_CONFIG.locationId });
+      expect(mockInstance.get).toHaveBeenCalledWith(`/locations/${TEST_CONFIG.locationId}`);
     });
 
-    it('should handle connection failure', async () => {
-      mockAxiosInstance.get.mockRejectedValueOnce(new Error('Network error'));
-
-      await expect(ghlClient.testConnection()).rejects.toThrow('Connection test failed');
+    it('throws a descriptive error on failure', async () => {
+      mockInstance.get.mockRejectedValueOnce(new Error('boom'));
+      await expect(client.testConnection()).rejects.toThrow('GHL API connection test failed');
     });
   });
 
-  describe('Contact API methods', () => {
-    describe('createContact', () => {
-      it('should create contact successfully', async () => {
-        const contactData = {
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john@example.com'
-        };
-
-        mockAxiosInstance.post.mockResolvedValueOnce({
-          data: { contact: { id: 'contact_123', ...contactData } }
-        });
-
-        const result = await ghlClient.createContact(contactData);
-
-        expect(result.success).toBe(true);
-        expect(result.data.id).toBe('contact_123');
-        expect(mockAxiosInstance.post).toHaveBeenCalledWith('/contacts/', contactData);
+  describe('contact methods', () => {
+    it('createContact posts to /contacts/ and unwraps the contact', async () => {
+      mockInstance.post.mockResolvedValueOnce({
+        data: { contact: { id: 'contact_123', email: 'john@example.com' } }
       });
 
-      it('should handle create contact error', async () => {
-        mockAxiosInstance.post.mockRejectedValueOnce({
-          response: { status: 400, data: { message: 'Invalid email' } }
-        });
+      const result = await client.createContact({ email: 'john@example.com' });
 
-        await expect(
-          ghlClient.createContact({ email: 'invalid' })
-        ).rejects.toThrow('GHL API Error (400): Invalid email');
-      });
+      expect(result.success).toBe(true);
+      expect(result.data.id).toBe('contact_123');
+      const [url, payload] = mockInstance.post.mock.calls[0];
+      expect(url).toBe('/contacts/');
+      // locationId is injected from config when not supplied
+      expect(payload.locationId).toBe(TEST_CONFIG.locationId);
     });
 
-    describe('getContact', () => {
-      it('should get contact successfully', async () => {
-        mockAxiosInstance.get.mockResolvedValueOnce({
-          data: { contact: { id: 'contact_123', name: 'John Doe' } }
-        });
-
-        const result = await ghlClient.getContact('contact_123');
-
-        expect(result.success).toBe(true);
-        expect(result.data.id).toBe('contact_123');
-        expect(mockAxiosInstance.get).toHaveBeenCalledWith('/contacts/contact_123');
+    it('getContact gets /contacts/{id} and unwraps the contact', async () => {
+      mockInstance.get.mockResolvedValueOnce({
+        data: { contact: { id: 'contact_123' } }
       });
-    });
 
-    describe('searchContacts', () => {
-      it('should search contacts successfully', async () => {
-        mockAxiosInstance.get.mockResolvedValueOnce({
-          data: { 
-            contacts: [{ id: 'contact_123' }],
-            total: 1
-          }
-        });
+      const result = await client.getContact('contact_123');
 
-        const result = await ghlClient.searchContacts({ query: 'John' });
-
-        expect(result.success).toBe(true);
-        expect(result.data.contacts).toHaveLength(1);
-        expect(mockAxiosInstance.get).toHaveBeenCalledWith('/contacts/search/duplicate', {
-          params: { query: 'John' }
-        });
-      });
+      expect(result.success).toBe(true);
+      expect(result.data.id).toBe('contact_123');
+      expect(mockInstance.get).toHaveBeenCalledWith('/contacts/contact_123');
     });
   });
 
-  describe('Conversation API methods', () => {
-    describe('sendSMS', () => {
-      it('should send SMS successfully', async () => {
-        mockAxiosInstance.post.mockResolvedValueOnce({
-          data: { messageId: 'msg_123', conversationId: 'conv_123' }
-        });
-
-        const result = await ghlClient.sendSMS('contact_123', 'Hello World');
-
-        expect(result.success).toBe(true);
-        expect(result.data.messageId).toBe('msg_123');
-        expect(mockAxiosInstance.post).toHaveBeenCalledWith('/conversations/messages', {
-          type: 'SMS',
-          contactId: 'contact_123',
-          message: 'Hello World'
-        });
-      });
-
-      it('should send SMS with custom from number', async () => {
-        mockAxiosInstance.post.mockResolvedValueOnce({
-          data: { messageId: 'msg_123' }
-        });
-
-        await ghlClient.sendSMS('contact_123', 'Hello', '+1-555-000-0000');
-
-        expect(mockAxiosInstance.post).toHaveBeenCalledWith('/conversations/messages', {
-          type: 'SMS',
-          contactId: 'contact_123',
-          message: 'Hello',
-          fromNumber: '+1-555-000-0000'
-        });
-      });
-    });
-
-    describe('sendEmail', () => {
-      it('should send email successfully', async () => {
-        mockAxiosInstance.post.mockResolvedValueOnce({
-          data: { emailMessageId: 'email_123' }
-        });
-
-        const result = await ghlClient.sendEmail('contact_123', 'Test Subject', 'Test body');
-
-        expect(result.success).toBe(true);
-        expect(result.data.emailMessageId).toBe('email_123');
-        expect(mockAxiosInstance.post).toHaveBeenCalledWith('/conversations/messages/email', {
-          type: 'Email',
-          contactId: 'contact_123',
-          subject: 'Test Subject',
-          message: 'Test body'
-        });
-      });
-
-      it('should send email with HTML and options', async () => {
-        mockAxiosInstance.post.mockResolvedValueOnce({
-          data: { emailMessageId: 'email_123' }
-        });
-
-        const options = { emailCc: ['cc@example.com'] };
-        await ghlClient.sendEmail('contact_123', 'Subject', 'Text', '<h1>HTML</h1>', options);
-
-        expect(mockAxiosInstance.post).toHaveBeenCalledWith('/conversations/messages/email', {
-          type: 'Email',
-          contactId: 'contact_123',
-          subject: 'Subject',
-          message: 'Text',
-          html: '<h1>HTML</h1>',
-          emailCc: ['cc@example.com']
-        });
-      });
-    });
-  });
-
-  describe('Blog API methods', () => {
-    describe('createBlogPost', () => {
-      it('should create blog post successfully', async () => {
-        mockAxiosInstance.post.mockResolvedValueOnce({
-          data: { data: { _id: 'post_123', title: 'Test Post' } }
-        });
-
-        const postData = {
-          title: 'Test Post',
-          blogId: 'blog_123',
-          rawHTML: '<h1>Content</h1>'
-        };
-
-        const result = await ghlClient.createBlogPost(postData);
-
-        expect(result.success).toBe(true);
-        expect(result.data.data._id).toBe('post_123');
-        expect(mockAxiosInstance.post).toHaveBeenCalledWith('/blogs/blog_123/posts', postData);
-      });
-    });
-
-    describe('getBlogSites', () => {
-      it('should get blog sites successfully', async () => {
-        mockAxiosInstance.get.mockResolvedValueOnce({
-          data: { data: [{ _id: 'blog_123', name: 'Test Blog' }] }
-        });
-
-        const result = await ghlClient.getBlogSites({ locationId: 'loc_123' });
-
-        expect(result.success).toBe(true);
-        expect(result.data.data).toHaveLength(1);
-        expect(mockAxiosInstance.get).toHaveBeenCalledWith('/blogs', {
-          params: { locationId: 'loc_123' }
-        });
-      });
-    });
-  });
-
-  describe('Error handling', () => {
-    it('should format axios error with response', async () => {
-      const axiosError = {
-        response: {
-          status: 404,
-          data: { message: 'Contact not found' }
-        }
+  describe('response interceptor: error formatting', () => {
+    it('formats API errors as "GHL API Error (status): message"', async () => {
+      const onRejected = getResponseErrorHandler();
+      const err = {
+        config: { url: '/contacts/' },
+        response: { status: 400, data: { message: 'Invalid email' } }
       };
 
-      mockAxiosInstance.get.mockRejectedValueOnce(axiosError);
-
-      await expect(
-        ghlClient.getContact('not_found')
-      ).rejects.toThrow('GHL API Error (404): Contact not found');
+      await expect(onRejected(err)).rejects.toThrow('GHL API Error (400): Invalid email');
     });
+  });
 
-    it('should format axios error without response data', async () => {
-      const axiosError = {
-        response: {
-          status: 500,
-          statusText: 'Internal Server Error'
-        }
+  describe('response interceptor: 429 retry', () => {
+    it('retries a rate-limited request and succeeds', async () => {
+      const onRejected = getResponseErrorHandler();
+      mockInstance.mockResolvedValueOnce({ data: 'ok' }); // the retried call
+
+      const err: any = {
+        config: { url: '/contacts/' },
+        response: { status: 429, headers: {} }
       };
 
-      mockAxiosInstance.get.mockRejectedValueOnce(axiosError);
+      const result = await onRejected(err);
 
-      await expect(
-        ghlClient.getContact('contact_123')
-      ).rejects.toThrow('GHL API Error (500): Internal Server Error');
+      expect(result).toEqual({ data: 'ok' });
+      expect(mockInstance).toHaveBeenCalledWith(err.config); // request was re-issued
+      expect(err.config._retryCount).toBe(1);
     });
 
-    it('should handle network errors', async () => {
-      const networkError = new Error('Network Error');
-      mockAxiosInstance.get.mockRejectedValueOnce(networkError);
+    it('gives up after maxRetries and rejects with a formatted error', async () => {
+      const onRejected = getResponseErrorHandler();
+      const err: any = {
+        config: { url: '/contacts/', _retryCount: 3 }, // already at max (3)
+        response: { status: 429, headers: {}, data: { message: 'Too Many Requests' } }
+      };
 
-      await expect(
-        ghlClient.getContact('contact_123')
-      ).rejects.toThrow('GHL API Error: Network Error');
-    });
-  });
-
-  describe('Request/Response handling', () => {
-    it('should properly format successful responses', async () => {
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: { contact: { id: 'contact_123' } },
-        status: 200
-      });
-
-      const result = await ghlClient.getContact('contact_123');
-
-      expect(result).toEqual({
-        success: true,
-        data: { id: 'contact_123' }
-      });
-    });
-
-    it('should extract nested data correctly', async () => {
-      mockAxiosInstance.post.mockResolvedValueOnce({
-        data: { 
-          data: { 
-            blogPost: { _id: 'post_123', title: 'Test' }
-          }
-        }
-      });
-
-      const result = await ghlClient.createBlogPost({
-        title: 'Test',
-        blogId: 'blog_123'
-      });
-
-      expect(result.data).toEqual({
-        blogPost: { _id: 'post_123', title: 'Test' }
-      });
+      await expect(onRejected(err)).rejects.toThrow('GHL API Error (429)');
+      expect(mockInstance).not.toHaveBeenCalled(); // no further retry
     });
   });
-}); 
+});

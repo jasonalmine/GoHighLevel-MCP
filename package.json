@@ -33,8 +33,8 @@
     "chatgpt",
     "api"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Jason Almine (Ventryx AI)",
+  "license": "MIT",
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.29",
