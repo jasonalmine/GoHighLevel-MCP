@@ -1,9 +1,10 @@
 # 🚀 GoHighLevel MCP Server
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/mastanley13/GoHighLevel-MCP)
-[![Donate to the Project](https://img.shields.io/badge/Donate_to_the_Project-💝_Support_Development-ff69b4?style=for-the-badge&logo=stripe&logoColor=white)](https://buy.stripe.com/28E14o1hT7JAfstfvqdZ60y)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jasonalmine/GoHighLevel-MCP)
 
 > **Transform ChatGPT into a GoHighLevel CRM powerhouse with 21 powerful tools**
+
+> Maintained for the GoHighLevel community. Need it built or managed for you? [VentryxAI](https://ventryx.ai) handles GoHighLevel automation end to end.
 
 ## 🎯 What This Does
 
@@ -28,7 +29,7 @@ This MCP (Model Context Protocol) server connects ChatGPT directly to your GoHig
 ## ⚡ Quick Deploy to Vercel
 
 ### 1. One-Click Deploy
-Click the button above or: [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/mastanley13/GoHighLevel-MCP)
+Click the button above or: [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jasonalmine/GoHighLevel-MCP)
 
 ### 2. Add Environment Variables
 ```
@@ -105,7 +106,7 @@ https://your-app-name.vercel.app/sse
 ### Setup
 ```bash
 # Clone repository
-git clone https://github.com/mastanley13/GoHighLevel-MCP.git
+git clone https://github.com/jasonalmine/GoHighLevel-MCP.git
 cd GoHighLevel-MCP
 
 # Install dependencies

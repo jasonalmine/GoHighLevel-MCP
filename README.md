@@ -1,8 +1,10 @@
-**Instead of trying to tackle this ---- use our hosted version --- GHL Agent Framework, One Click to Sign in!**
-
-https://www.strategixagents.com/
-
 # 🚀 GoHighLevel MCP Server
+
+> An open-source Model Context Protocol (MCP) server that connects your GoHighLevel sub-account to Claude, ChatGPT, and other AI clients. Self-host it, extend it, and run your CRM through natural language.
+
+### Want it built and managed for you?
+
+**[VentryxAI](https://ventryx.ai)** builds and operates AI-powered automation and CRM systems for service businesses on GoHighLevel, n8n, and Make.com. From MCP integrations to funnels and workflows, VentryxAI handles the setup end to end so your team can focus on the work that grows the business. [Get in touch →](https://ventryx.ai)
 
 ## 🚨 **IMPORTANT: FOUNDATIONAL PROJECT NOTICE** 
 
@@ -77,11 +79,10 @@ https://www.strategixagents.com/
 
 ---
 
-This project was a 'time-taker' but I felt it was important. Feel free to donate - everything will go into furthering this Project -> Aiming for Mass Agency "Agent Driven Operations".
+This is an open-source project maintained for the GoHighLevel community. Contributions, issues, and pull requests are welcome. If you'd prefer a fully managed setup, [VentryxAI](https://ventryx.ai) builds and operates GoHighLevel automation systems end to end.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/mastanley13/GoHighLevel-MCP)
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/mastanley13/GoHighLevel-MCP)
-[![Donate to the Project](https://img.shields.io/badge/Donate_to_the_Project-💝_Support_Development-ff69b4?style=for-the-badge&logo=stripe&logoColor=white)](https://buy.stripe.com/28E14o1hT7JAfstfvqdZ60y)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jasonalmine/GoHighLevel-MCP)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/jasonalmine/GoHighLevel-MCP)
 
 > **🔥 Transform Claude Desktop into a complete GoHighLevel CRM powerhouse with 268 powerful tools across 23 categories**
 
@@ -99,7 +100,7 @@ This comprehensive MCP (Model Context Protocol) server connects Claude Desktop d
 ## ⚡ Quick Deploy Options
 
 ### 🟢 Vercel (Recommended)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/ghl-mcp-server)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jasonalmine/GoHighLevel-MCP)
 
 **Why Vercel:**
 - ✅ Free tier with generous limits
@@ -380,7 +381,7 @@ This comprehensive MCP (Model Context Protocol) server connects Claude Desktop d
 ### Installation & Setup
 ```bash
 # Clone the repository
-git clone https://github.com/mastanley13/GoHighLevel-MCP.git
+git clone https://github.com/jasonalmine/GoHighLevel-MCP.git
 cd GoHighLevel-MCP
 
 # Install dependencies
@@ -416,7 +417,14 @@ LOG_LEVEL=info
 # Optional: Rate-limit retry tuning (sane defaults if omitted)
 GHL_MAX_RETRIES=3              # Retries on HTTP 429 before giving up
 GHL_RETRY_BASE_DELAY_MS=1000   # Base backoff delay; doubles each retry, capped at 20s
+
+# STRONGLY RECOMMENDED if you host the HTTP server on a public URL:
+# Requires Authorization: Bearer <token> (or x-api-key) on /sse and /tools.
+# Without it the HTTP server is unauthenticated and exposes your GHL account.
+MCP_AUTH_TOKEN=your_long_random_secret_here
 ```
+
+> **🔒 Security note:** The stdio server (Claude Desktop) has no network surface and needs no auth. The HTTP server (`npm start`) executes tools using your API key. If you deploy it anywhere public, set `MCP_AUTH_TOKEN` — otherwise anyone who reaches the URL can run every tool against your sub-account.
 
 ### Available Scripts
 ```bash
@@ -448,7 +456,7 @@ curl -H "Accept: text/event-stream" http://localhost:8000/sse
 ### 🟢 Vercel Deployment (Recommended)
 
 **Option 1: One-Click Deploy**
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/mastanley13/GoHighLevel-MCP)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jasonalmine/GoHighLevel-MCP)
 
 **Option 2: Manual Deploy**
 ```bash
@@ -747,8 +755,8 @@ This project is licensed under the **ISC License** - see the [LICENSE](LICENSE) 
 - 🔧 [Deployment Guides](docs/deployment/)
 
 ### Getting Help
-- **Issues**: [GitHub Issues](https://github.com/mastanley13/GoHighLevel-MCP/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/mastanley13/GoHighLevel-MCP/discussions)
+- **Issues**: [GitHub Issues](https://github.com/jasonalmine/GoHighLevel-MCP/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/jasonalmine/GoHighLevel-MCP/discussions)
 - **API Reference**: [GoHighLevel API Docs](https://highlevel.stoplight.io/)
 - **MCP Protocol**: [Model Context Protocol](https://modelcontextprotocol.io/)
 
@@ -762,7 +770,7 @@ This project is licensed under the **ISC License** - see the [LICENSE](LICENSE) 
 
 This comprehensive MCP server delivers:
 
-### ✅ **269 Operational Tools** across 19 categories
+### ✅ **268 Operational Tools** across 23 categories
 ### ✅ **Real-time GoHighLevel Integration** with full API coverage
 ### ✅ **Production-Ready Deployment** on multiple platforms
 ### ✅ **Enterprise-Grade Architecture** with comprehensive error handling
@@ -778,28 +786,23 @@ This comprehensive MCP server delivers:
 
 **Deploy now and unlock the full potential of AI-powered CRM management!**
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/mastanley13/GoHighLevel-MCP) [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/mastanley13/GoHighLevel-MCP)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jasonalmine/GoHighLevel-MCP) [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/jasonalmine/GoHighLevel-MCP)
 
 ---
 
-## 💝 Support This Project
+## 🤝 Contributing & Support
 
-This project represents hundreds of hours of development work to help the GoHighLevel community. If it's saving you time and helping your business, consider supporting its continued development:
+This is an open-source project built for the GoHighLevel community. The best ways to help it grow:
 
-### 🎁 Ways to Support:
 - **⭐ Star this repo** - Helps others discover the project
-- **🍕 Buy me a pizza** - [Donate via Stripe](https://buy.stripe.com/28E14o1hT7JAfstfvqdZ60y) 
-- **🐛 Report bugs** - Help make it better for everyone
-- **💡 Suggest features** - Share your ideas for improvements
-- **🤝 Contribute code** - Pull requests are always welcome!
+- **🐛 Report bugs** - Open an issue so they can be fixed
+- **💡 Suggest features** - Share ideas for improvements
+- **🔀 Contribute code** - Pull requests are always welcome
 
-### 🏆 Recognition:
-- Contributors will be listed in the project
-- Significant contributions may get special recognition
-- This project is community-driven and community-supported
+### Need it built or managed for you?
 
-**Every contribution, big or small, helps keep this project alive and growing!** 🚀
+If you'd rather not self-host and maintain this, [VentryxAI](https://ventryx.ai) designs and operates AI-powered automation and CRM systems on GoHighLevel, n8n, and Make.com, from MCP integrations to full funnel and workflow builds. [Get in touch →](https://ventryx.ai)
 
 ---
 
-*Made with ❤️ for the GoHighLevel community by developers who understand the power of automation.* 
+*Open-source and maintained for the GoHighLevel community. Commercial setup and support by [VentryxAI](https://ventryx.ai).*

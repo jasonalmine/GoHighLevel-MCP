@@ -337,6 +337,49 @@ class GHLMCPHttpServer {
   /**
    * Setup HTTP routes
    */
+  /**
+   * Optional shared-secret auth for the HTTP transport.
+   *
+   * When MCP_AUTH_TOKEN is set, protected routes require it via
+   * `Authorization: Bearer <token>` or the `x-api-key` header. When it is unset,
+   * the server runs open (a warning is logged at startup) so local / stdio-style
+   * use is unaffected. ALWAYS set MCP_AUTH_TOKEN before exposing this server on a
+   * public URL — without it, anyone who can reach the URL can run every tool
+   * against your GoHighLevel account using your API key.
+   */
+  private requireAuth = (
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ): void => {
+    const expected = process.env.MCP_AUTH_TOKEN;
+    if (!expected) {
+      next();
+      return;
+    }
+    if (req.method === 'OPTIONS') {
+      next();
+      return;
+    }
+    const authHeader = req.headers['authorization'];
+    const bearer =
+      typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
+        ? authHeader.slice(7)
+        : undefined;
+    const apiKey =
+      typeof req.headers['x-api-key'] === 'string'
+        ? (req.headers['x-api-key'] as string)
+        : undefined;
+    const provided = bearer || apiKey;
+
+    if (provided && provided === expected) {
+      next();
+      return;
+    }
+
+    res.status(401).json({ error: 'Unauthorized' });
+  };
+
   private setupRoutes(): void {
     // Health check endpoint
     this.app.get('/health', (req, res) => {
@@ -363,7 +406,7 @@ class GHLMCPHttpServer {
     });
 
     // Tools listing endpoint
-    this.app.get('/tools', async (req, res) => {
+    this.app.get('/tools', this.requireAuth, async (req, res) => {
       try {
         const contactTools = this.contactTools.getToolDefinitions();
         const conversationTools = this.conversationTools.getToolDefinitions();
@@ -425,8 +468,8 @@ class GHLMCPHttpServer {
     };
 
     // Handle both GET and POST for SSE (MCP protocol requirements)
-    this.app.get('/sse', handleSSE);
-    this.app.post('/sse', handleSSE);
+    this.app.get('/sse', this.requireAuth, handleSSE);
+    this.app.post('/sse', this.requireAuth, handleSSE);
 
     // Root endpoint with server info
     this.app.get('/', (req, res) => {
@@ -792,6 +835,12 @@ class GHLMCPHttpServer {
         console.log(`🌐 Server running on: http://0.0.0.0:${this.port}`);
         console.log(`🔗 SSE Endpoint: http://0.0.0.0:${this.port}/sse`);
         console.log(`📋 Tools Available: ${this.getToolsCount().total}`);
+        if (process.env.MCP_AUTH_TOKEN) {
+          console.log('🔒 Auth: ENABLED (MCP_AUTH_TOKEN required on /sse and /tools)');
+        } else {
+          console.warn('⚠️  Auth: DISABLED — set MCP_AUTH_TOKEN before exposing this server publicly.');
+          console.warn('⚠️  Without it, anyone who can reach this URL can run every tool against your GHL account.');
+        }
         console.log('🎯 Ready for ChatGPT integration!');
         console.log('=========================================');
       });

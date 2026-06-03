@@ -2934,8 +2934,8 @@ export class GHLApiClient {
 
       const recordingResponse: GHLMessageRecordingResponse = {
         audioData: response.data,
-        contentType: response.headers['content-type'] || 'audio/x-wav',
-        contentDisposition: response.headers['content-disposition'] || 'attachment; filename=audio.wav'
+        contentType: (response.headers['content-type'] as string) || 'audio/x-wav',
+        contentDisposition: (response.headers['content-disposition'] as string) || 'attachment; filename=audio.wav'
       };
 
       return this.wrapResponse(recordingResponse);

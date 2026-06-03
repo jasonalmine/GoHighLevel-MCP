@@ -42,7 +42,7 @@ GHL API version is pinned to `2021-07-28` in code (`initializeGHLClient`).
 Three independent entry points, one shared tool layer (except the Vercel one):
 
 - `src/server.ts` — **stdio** MCP server for Claude Desktop. `GHLMCPServer` class.
-- `src/http-server.ts` — **HTTP/SSE** MCP server (Express) for hosted/web clients. Endpoints: `/health`, `/capabilities`, `/tools`, `/sse` (GET+POST), `POST /` for `tools/call`. This is the default `npm start` target.
+- `src/http-server.ts` — **HTTP/SSE** MCP server (Express) for hosted/web clients. Endpoints: `/health`, `/capabilities`, `/tools`, `/sse` (GET+POST), `POST /` for `tools/call`. This is the default `npm start` target. Tool-executing routes (`/sse`, `/tools`) are gated by `requireAuth`: when `MCP_AUTH_TOKEN` is set they require `Authorization: Bearer <token>` or `x-api-key`; unset = open (startup logs a warning). Always set it for public deploys.
 - `api/index.js` — **standalone** serverless function for Vercel/ChatGPT. Hand-rolled MCP `2024-11-05` protocol, **not** built from `src/`. Exposes only `search` and `retrieve` tools because ChatGPT restricts tool names. Edit this file directly; it does not import the TypeScript tool layer.
 
 Layering for the two TypeScript servers:
