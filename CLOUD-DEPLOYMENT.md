@@ -2,7 +2,7 @@
 
 ## 🎯 Overview
 
-To connect your GoHighLevel MCP Server to ChatGPT, you need to deploy it to a **publicly accessible URL**. Here are the best options:
+To connect your Ventryx GHL MCP Server to ChatGPT, you need to deploy it to a **publicly accessible URL**. Here are the best options:
 
 ---
 
@@ -73,7 +73,7 @@ To connect your GoHighLevel MCP Server to ChatGPT, you need to deploy it to a **
 
 ### **Deploy with One Click:**
 
-1. **Click Deploy Button:** [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/ghl-mcp-server)
+1. **Click Deploy Button:** [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/ventryx-ghl-mcp-server)
 
 2. **Add Environment Variables** during setup
 
@@ -119,7 +119,7 @@ Should return:
 ```json
 {
   "status": "healthy",
-  "server": "ghl-mcp-server",
+  "server": "ventryx-ghl-mcp-server",
   "tools": { "total": 21 }
 }
 ```
@@ -243,7 +243,7 @@ curl -H "Accept: text/event-stream" https://your-domain.com/sse
 4. **Connect to ChatGPT** using your new server URL
 5. **Start managing GoHighLevel through ChatGPT!**
 
-Your GoHighLevel MCP Server will be accessible at:
+Your Ventryx GHL MCP Server will be accessible at:
 ```
 https://your-domain.com/sse
 ```

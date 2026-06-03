@@ -1,10 +1,10 @@
 {
-  "name": "@mastanley13/ghl-mcp-server",
+  "name": "ventryx-ghl-mcp-server",
   "version": "1.0.0",
-  "description": "GoHighLevel MCP Server for Claude Desktop and ChatGPT integration",
+  "description": "Ventryx GHL MCP Server for Claude Desktop and ChatGPT integration",
   "main": "dist/server.js",
   "bin": {
-    "ghl-mcp-server": "dist/server.js"
+    "ventryx-ghl-mcp-server": "dist/server.js"
   },
   "files": [
     "dist/",

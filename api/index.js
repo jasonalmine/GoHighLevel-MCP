@@ -5,7 +5,7 @@ const MCP_PROTOCOL_VERSION = "2024-11-05";
 
 // Server information - ChatGPT requires specific format
 const SERVER_INFO = {
-  name: "ghl-mcp-server",
+  name: "ventryx-ghl-mcp-server",
   version: "1.0.0"
 };
 

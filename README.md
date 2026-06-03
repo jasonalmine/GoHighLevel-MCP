@@ -1,4 +1,4 @@
-# 🚀 GoHighLevel MCP Server
+# Ventryx GHL MCP Server
 
 > An open-source Model Context Protocol (MCP) server that connects your GoHighLevel sub-account to Claude, ChatGPT, and other AI clients. Self-host it, extend it, and run your CRM through natural language.
 
@@ -514,14 +514,14 @@ railway up
 
 ```bash
 # Build image
-docker build -t ghl-mcp-server .
+docker build -t ventryx-ghl-mcp-server .
 
 # Run container
 docker run -p 8000:8000 \
   -e GHL_API_KEY=your_key \
   -e GHL_BASE_URL=https://services.leadconnectorhq.com \
   -e GHL_LOCATION_ID=your_location_id \
-  ghl-mcp-server
+  ventryx-ghl-mcp-server
 ```
 
 ## 🔌 Claude Desktop Integration
@@ -532,9 +532,9 @@ Add to your Claude Desktop `mcp_settings.json`:
 ```json
 {
   "mcpServers": {
-    "ghl-mcp-server": {
+    "ventryx-ghl-mcp-server": {
       "command": "node",
-      "args": ["path/to/ghl-mcp-server/dist/server.js"],
+      "args": ["path/to/ventryx-ghl-mcp-server/dist/server.js"],
       "env": {
         "GHL_API_KEY": "your_private_integrations_api_key",
         "GHL_BASE_URL": "https://services.leadconnectorhq.com",
@@ -554,7 +554,7 @@ https://your-deployment-url.vercel.app/sse
 ## 📋 Project Architecture
 
 ```
-ghl-mcp-server/
+ventryx-ghl-mcp-server/
 ├── 📁 src/                    # Source code
 │   ├── 📁 clients/            # API client implementations
 │   │   └── ghl-api-client.ts  # Core GHL API client
