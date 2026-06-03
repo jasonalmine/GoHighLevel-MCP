@@ -1,5 +1,5 @@
 /**
- * Ventryx GHL MCP Server
+ * GHL MCP Server
  * Main entry point for the Model Context Protocol server
  */
 
@@ -76,7 +76,7 @@ class GHLMCPServer {
     // Initialize MCP server with capabilities
     this.server = new Server(
       {
-        name: 'ventryx-ghl-mcp-server',
+        name: 'ghl-mcp-server',
         version: '1.0.0',
       },
       {
@@ -690,7 +690,7 @@ class GHLMCPServer {
    * Initialize and start the MCP server
    */
   async start(): Promise<void> {
-    process.stderr.write('🚀 Starting Ventryx GHL MCP Server...\n');
+    process.stderr.write('🚀 Starting GHL MCP Server...\n');
     process.stderr.write('=====================================\n');
     
     try {
@@ -703,7 +703,7 @@ class GHLMCPServer {
       // Connect server to transport
       await this.server.connect(transport);
       
-      process.stderr.write('✅ Ventryx GHL MCP Server started successfully!\n');
+      process.stderr.write('✅ GHL MCP Server started successfully!\n');
       process.stderr.write('🔗 Ready to handle Claude Desktop requests\n');
       process.stderr.write('=====================================\n');
       

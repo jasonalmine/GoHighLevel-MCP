@@ -1,5 +1,5 @@
 /**
- * Ventryx GHL MCP HTTP Server
+ * GHL MCP HTTP Server
  * HTTP version for ChatGPT web integration
  */
 
@@ -86,7 +86,7 @@ class GHLMCPHttpServer {
     // Initialize MCP server with capabilities
     this.server = new Server(
       {
-        name: 'ventryx-ghl-mcp-server',
+        name: 'ghl-mcp-server',
         version: '1.0.0',
       },
       {
@@ -385,7 +385,7 @@ class GHLMCPHttpServer {
     this.app.get('/health', (req, res) => {
       res.json({ 
         status: 'healthy',
-        server: 'ventryx-ghl-mcp-server',
+        server: 'ghl-mcp-server',
         version: '1.0.0',
         timestamp: new Date().toISOString(),
         tools: this.getToolsCount()
@@ -399,7 +399,7 @@ class GHLMCPHttpServer {
           tools: {},
         },
         server: {
-          name: 'ventryx-ghl-mcp-server',
+          name: 'ghl-mcp-server',
           version: '1.0.0'
         }
       });
@@ -474,7 +474,7 @@ class GHLMCPHttpServer {
     // Root endpoint with server info
     this.app.get('/', (req, res) => {
       res.json({
-        name: 'Ventryx GHL MCP Server',
+        name: 'GHL MCP Server',
         version: '1.0.0',
         status: 'running',
         endpoints: {
@@ -484,7 +484,7 @@ class GHLMCPHttpServer {
           sse: '/sse'
         },
         tools: this.getToolsCount(),
-        documentation: 'https://github.com/your-repo/ventryx-ghl-mcp-server'
+        documentation: 'https://github.com/your-repo/ghl-mcp-server'
       });
     });
   }
@@ -822,7 +822,7 @@ class GHLMCPHttpServer {
    * Start the HTTP server
    */
   async start(): Promise<void> {
-    console.log('🚀 Starting Ventryx GHL MCP HTTP Server...');
+    console.log('🚀 Starting GHL MCP HTTP Server...');
     console.log('=========================================');
     
     try {
@@ -831,7 +831,7 @@ class GHLMCPHttpServer {
       
       // Start HTTP server
       this.app.listen(this.port, '0.0.0.0', () => {
-        console.log('✅ Ventryx GHL MCP HTTP Server started successfully!');
+        console.log('✅ GHL MCP HTTP Server started successfully!');
         console.log(`🌐 Server running on: http://0.0.0.0:${this.port}`);
         console.log(`🔗 SSE Endpoint: http://0.0.0.0:${this.port}/sse`);
         console.log(`📋 Tools Available: ${this.getToolsCount().total}`);

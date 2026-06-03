@@ -1,4 +1,4 @@
-# 🚀 Claude Desktop + Ventryx GHL MCP Server Deployment Plan
+# 🚀 Claude Desktop + GHL MCP Server Deployment Plan
 
 > **GOAL**: Deploy your GoHighLevel MCP server to work flawlessly with Claude Desktop, giving Claude access to all 21 GoHighLevel tools for contact management, messaging, and blog operations.
 
@@ -48,7 +48,7 @@ This plan provides **5 deployment strategies** ranging from simple local setup t
 #### 1. Environment Setup
 ```bash
 # 1. Clone and setup (if not already done)
-cd /path/to/ventryx-ghl-mcp-server
+cd /path/to/ghl-mcp-server
 npm install
 npm run build
 
@@ -67,8 +67,8 @@ EOF
 npm run start:stdio
 
 # You should see:
-# 🚀 Starting Ventryx GHL MCP Server...
-# ✅ Ventryx GHL MCP Server started successfully!
+# 🚀 Starting GHL MCP Server...
+# ✅ GHL MCP Server started successfully!
 # 📋 Available tools: 21
 ```
 
@@ -84,7 +84,7 @@ npm run start:stdio
   "mcpServers": {
     "ghl-mcp-local": {
       "command": "node",
-      "args": ["/Users/YOUR_USERNAME/path/to/ventryx-ghl-mcp-server/dist/server.js"],
+      "args": ["/Users/YOUR_USERNAME/path/to/ghl-mcp-server/dist/server.js"],
       "env": {
         "GHL_API_KEY": "your_ghl_api_key_here",
         "GHL_BASE_URL": "https://services.leadconnectorhq.com",
@@ -101,7 +101,7 @@ npm run start:stdio
   "mcpServers": {
     "ghl-mcp-local": {
       "command": "node",
-      "args": ["C:\\Users\\YOUR_USERNAME\\path\\to\\ventryx-ghl-mcp-server\\dist\\server.js"],
+      "args": ["C:\\Users\\YOUR_USERNAME\\path\\to\\ghl-mcp-server\\dist\\server.js"],
       "env": {
         "GHL_API_KEY": "your_ghl_api_key_here",
         "GHL_BASE_URL": "https://services.leadconnectorhq.com",
@@ -139,12 +139,12 @@ npm run start:stdio
 # Update package.json for NPM
 cat > package.json << 'EOF'
 {
-  "name": "@yourusername/ventryx-ghl-mcp-server",
+  "name": "@yourusername/ghl-mcp-server",
   "version": "1.0.0",
-  "description": "Ventryx GHL MCP Server for Claude Desktop",
+  "description": "GHL MCP Server for Claude Desktop",
   "main": "dist/server.js",
   "bin": {
-    "ventryx-ghl-mcp-server": "dist/server.js"
+    "ghl-mcp-server": "dist/server.js"
   },
   "scripts": {
     "build": "tsc",
@@ -180,7 +180,7 @@ npm publish --access public
   "mcpServers": {
     "ghl-mcp-npm": {
       "command": "npx",
-      "args": ["-y", "@yourusername/ventryx-ghl-mcp-server"],
+      "args": ["-y", "@yourusername/ghl-mcp-server"],
       "env": {
         "GHL_API_KEY": "your_ghl_api_key_here",
         "GHL_BASE_URL": "https://services.leadconnectorhq.com", 
@@ -236,7 +236,7 @@ USER ghl-mcp
 EXPOSE 8000
 
 # Default to HTTP server for cloud deployment
-# For Claude Desktop STDIO, override: docker run ... yourusername/ventryx-ghl-mcp-server node dist/server.js
+# For Claude Desktop STDIO, override: docker run ... yourusername/ghl-mcp-server node dist/server.js
 CMD ["node", "dist/http-server.js"]
 EOF
 ```
@@ -244,24 +244,24 @@ EOF
 #### 2. Build and Test Container
 ```bash
 # Build Docker image
-docker build -t ventryx-ghl-mcp-server .
+docker build -t ghl-mcp-server .
 
 # Test container locally
 docker run -it --rm \
   -e GHL_API_KEY="your_api_key" \
   -e GHL_LOCATION_ID="your_location_id" \
-  ventryx-ghl-mcp-server
+  ghl-mcp-server
 ```
 
 #### 3. Deploy to Container Registry
 ```bash
 # Push to Docker Hub
-docker tag ventryx-ghl-mcp-server yourusername/ventryx-ghl-mcp-server:latest
-docker push yourusername/ventryx-ghl-mcp-server:latest
+docker tag ghl-mcp-server yourusername/ghl-mcp-server:latest
+docker push yourusername/ghl-mcp-server:latest
 
 # Or GitHub Container Registry
-docker tag ventryx-ghl-mcp-server ghcr.io/yourusername/ventryx-ghl-mcp-server:latest
-docker push ghcr.io/yourusername/ventryx-ghl-mcp-server:latest
+docker tag ghl-mcp-server ghcr.io/yourusername/ghl-mcp-server:latest
+docker push ghcr.io/yourusername/ghl-mcp-server:latest
 ```
 
 #### 4. Claude Desktop Configuration (Docker)
@@ -274,7 +274,7 @@ docker push ghcr.io/yourusername/ventryx-ghl-mcp-server:latest
         "run", "--rm", "-i",
         "-e", "GHL_API_KEY=your_api_key",
         "-e", "GHL_LOCATION_ID=your_location_id",
-        "yourusername/ventryx-ghl-mcp-server:latest"
+        "yourusername/ghl-mcp-server:latest"
       ]
     }
   }
@@ -343,9 +343,9 @@ gcloud auth login
 gcloud config set project your-project-id
 
 # Build and deploy
-gcloud builds submit --tag gcr.io/your-project-id/ventryx-ghl-mcp-server
-gcloud run deploy ventryx-ghl-mcp-server \
-  --image gcr.io/your-project-id/ventryx-ghl-mcp-server \
+gcloud builds submit --tag gcr.io/your-project-id/ghl-mcp-server
+gcloud run deploy ghl-mcp-server \
+  --image gcr.io/your-project-id/ghl-mcp-server \
   --platform managed \
   --region us-central1 \
   --set-env-vars="GHL_API_KEY=your_api_key,GHL_LOCATION_ID=your_location_id"
@@ -357,12 +357,12 @@ gcloud run deploy ventryx-ghl-mcp-server \
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: ventryx-ghl-mcp-server
+  name: ghl-mcp-server
 spec:
   template:
     spec:
       containers:
-      - image: gcr.io/your-project-id/ventryx-ghl-mcp-server
+      - image: gcr.io/your-project-id/ghl-mcp-server
         command: ["node", "dist/http-server.js"]
         ports:
         - containerPort: 8000
@@ -389,7 +389,7 @@ spec:
       "command": "ssh",
       "args": [
         "your-server",
-        "cd /path/to/ventryx-ghl-mcp-server && node dist/server.js"
+        "cd /path/to/ghl-mcp-server && node dist/server.js"
       ],
       "env": {
         "GHL_API_KEY": "your_api_key",
@@ -410,7 +410,7 @@ spec:
         "run", "--rm", "-i",
         "-e", "GHL_API_KEY=your_api_key",
         "-e", "GHL_LOCATION_ID=your_location_id",
-        "your-registry/ventryx-ghl-mcp-server:latest"
+        "your-registry/ghl-mcp-server:latest"
       ]
     }
   }
@@ -423,7 +423,7 @@ spec:
   "mcpServers": {
     "ghl-mcp-cloud": {
       "command": "npx",
-      "args": ["-y", "@yourusername/ventryx-ghl-mcp-server"],
+      "args": ["-y", "@yourusername/ghl-mcp-server"],
       "env": {
         "GHL_API_KEY": "your_api_key",
         "GHL_LOCATION_ID": "your_location_id",
@@ -461,7 +461,7 @@ graph TB
 ```hcl
 # infrastructure/main.tf
 resource "aws_ecs_service" "ghl_mcp_server" {
-  name            = "ventryx-ghl-mcp-server"
+  name            = "ghl-mcp-server"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.ghl_mcp.arn
   desired_count   = 3
@@ -473,7 +473,7 @@ resource "aws_ecs_service" "ghl_mcp_server" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.ghl_mcp.arn
-    container_name   = "ventryx-ghl-mcp-server"
+    container_name   = "ghl-mcp-server"
     container_port   = 8000
   }
 }
@@ -485,20 +485,20 @@ resource "aws_ecs_service" "ghl_mcp_server" {
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ventryx-ghl-mcp-server
+  name: ghl-mcp-server
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: ventryx-ghl-mcp-server
+      app: ghl-mcp-server
   template:
     metadata:
       labels:
-        app: ventryx-ghl-mcp-server
+        app: ghl-mcp-server
     spec:
       containers:
-      - name: ventryx-ghl-mcp-server
-        image: ventryx-ghl-mcp-server:latest
+      - name: ghl-mcp-server
+        image: ghl-mcp-server:latest
         ports:
         - containerPort: 8000
         envFrom:
@@ -531,9 +531,9 @@ data:
     global:
       scrape_interval: 15s
     scrape_configs:
-    - job_name: 'ventryx-ghl-mcp-server'
+    - job_name: 'ghl-mcp-server'
       static_configs:
-      - targets: ['ventryx-ghl-mcp-server:8000']
+      - targets: ['ghl-mcp-server:8000']
       metrics_path: /metrics
 ```
 
@@ -547,7 +547,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app: ventryx-ghl-mcp-server
+      app: ghl-mcp-server
   policyTypes:
   - Ingress
   - Egress
@@ -585,7 +585,7 @@ cat ~/Library/Application\ Support/Claude/claude_desktop_config.json | jq .
 type %APPDATA%\Claude\claude_desktop_config.json
 
 # Test server manually
-node /path/to/ventryx-ghl-mcp-server/dist/server.js
+node /path/to/ghl-mcp-server/dist/server.js
 ```
 
 #### Issue 2: GHL API Authentication Fails
@@ -761,7 +761,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: ventryx-ghl-mcp-server
+    name: ghl-mcp-server
   minReplicas: 2
   maxReplicas: 10
   metrics:
